@@ -10,11 +10,16 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemReader;
 
+import org.springframework.batch.item.json.JacksonJsonObjectReader;
+import org.springframework.batch.item.json.JsonItemReader;
+import org.springframework.batch.item.json.builder.JsonItemReaderBuilder;
 import org.springframework.batch.item.kafka.KafkaItemWriter;
 import org.springframework.batch.item.kafka.builder.KafkaItemWriterBuilder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.PathResource;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,7 +32,6 @@ public class ProducerApplication {
 	public static void main(String args[]) {
 		SpringApplication.run(ProducerApplication.class, args);
 	}
-
 
 	private final JobBuilderFactory jobBuilderFactory;
 	private final StepBuilderFactory stepBuilderFactory;
@@ -50,29 +54,22 @@ public class ProducerApplication {
 			.build();
 	}
 
-
 	@Bean
 	Step start() {
-
-		var id = new AtomicLong();
-		var reader = new ItemReader<Customer>() {
-
-			@Override
-			public Customer read() {
-
-				if (id.incrementAndGet() < 10_1000)
-					return new Customer(id.get(), Math.random() > .5 ? "keven" : "geovana");
-
-				return null;
-			}
-		};
-
 		return this.stepBuilderFactory
 			.get("s1")
-			.<Customer, Customer>chunk(10)
-			.reader(reader)
+			.<Customer, Customer>chunk(1000)
+			.reader(jsonItemReaderP())
 			.writer(kafkaItemWriter())
 			.build();
 	}
 
-}
+	@Bean
+	public JsonItemReader<Customer> jsonItemReaderP() {
+		return new JsonItemReaderBuilder<Customer>()
+				.jsonObjectReader(new JacksonJsonObjectReader<>(Customer.class))
+				.resource(new PathResource("peter/peter.json"))
+				.name("studentJsonItemReader")
+				.build();
+	}
+}git

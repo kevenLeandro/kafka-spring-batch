@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Log4j2
 @SpringBootApplication
@@ -56,7 +57,7 @@ public class ConsumerApplication {
 			.partitions(getPartitiions())
 			.consumerProperties(props)
 			.name("customers-reader")
-			.saveState(true)
+			.saveState(false)
 			.topic("customerskk")
 			.build();
 	}
@@ -66,12 +67,14 @@ public class ConsumerApplication {
 		var writer = new ItemWriter<Customer>() {
 			@Override
 			public void write(List<? extends Customer> items) throws Exception {
-				items.forEach(it -> log.info("new customer: " + it));
+				items.forEach(it -> { log.info("new customer: " + it);
+				} );
+
 			}
 		};
 		return stepBuilderFactory
 			.get("step")
-			.<Customer, Customer>chunk(10)
+			.<Customer, Customer>chunk(1000)
 			.writer(writer)
 			.reader(kafkaItemReader())
 			.build();
